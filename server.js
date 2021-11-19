@@ -1,18 +1,18 @@
-//npm packages being imported
+
 const inquirer = require("inquirer")
 const ct = require('console.table');
 const db = require('./config/connection');
 
-//function to initialize prompt that calls an inquirer prompt that allows the user to select from each available function
-function initPrompt() {
+
+function init() {
   inquirer.prompt([{
     type: "list",
     message: "Make a Selection:",
     name: "choice",
     choices: [
-      "View All Departments?",
-      "View All Roles?",
-      "View all Employees",
+      "View Departments?",
+      "View Roles?",
+      "View Employees",
       "View Employees by Manager",
       "View Employees by Department",
       "View Department Budget",
@@ -26,15 +26,15 @@ function initPrompt() {
     ]
   }]).then(function (event) {
     switch (event.choice) {
-      case "View All Departments?":
-        viewAllDepartments();
+      case "View Departments?":
+        viewDepartments();
         break;
 
-      case "View All Roles?":
+      case "View Roles?":
         viewAllRoles();
         break;
 
-      case "View all Employees":
+      case "View Employees":
         viewAllEmployees();
         break;
 
@@ -79,36 +79,32 @@ function initPrompt() {
     }
   })
 }
-//function showing table for department
-function viewAllDepartments() {
+function viewDepartments() {
   db.query("SELECT id AS 'ID', name AS 'Department' FROM department",
     function (err, results) {
       if (err) throw err
       console.table(results)
-      initPrompt()
+      init()
     })
 };
-//function showing table for roles
-function viewAllRoles() {
+function viewRoles() {
   db.query("SELECT role.title AS 'Title', role.id AS 'ID', department.name AS 'Department', role.salary AS 'Salary' FROM department INNER JOIN role ON role.department_id=department.id ORDER BY id ASC;",
     function (err, results) {
       if (err) throw err
       console.table(results)
-      initPrompt()
+      init()
     })
 };
-//function showing table for employees. OUTER JOIN assisted by Lee
-function viewAllEmployees() {
+function viewEmployees() {
   db.query("SELECT employee.id AS ID, employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS 'Title',department.name AS 'Department', role.salary AS 'Salary', CONCAT(manager.first_name, ' ' ,manager.last_name) AS Manager FROM employee INNER JOIN role ON employee.role_id=role.id INNER JOIN department ON role.department_id=department.id LEFT OUTER JOIN employee manager ON employee.manager_id =manager.id;",
     function (err, results) {
       if (err) throw err
       console.table(results)
-      initPrompt()
+      init()
     })
 };
 
-// function showing table of employees based on department selection
-function viewEmployeesByDepartment() {
+function EmployeesByDepartment() {
   db.query(`SELECT * FROM department`, (err, data) => {
     if (err) throw err;
 
@@ -131,15 +127,13 @@ function viewEmployeesByDepartment() {
         if (err) throw err
         console.table(results)
 
-        initPrompt()
+        init()
       })
     })
   })
 };
 
-
-//function showing table for employees based on the selected Manager
-function viewEmployeesByManager() {
+function EmployeesByManager() {
   db.query(`SELECT * FROM employee WHERE manager_id IS NULL`, (err, data) => {
     if (err) throw err;
 
@@ -168,40 +162,38 @@ function viewEmployeesByManager() {
         } else {
           console.table(results)
         }
-        initPrompt()
+        init()
       })
     })
   })
 };
 
-//function viewing department budget
-function viewDepartmentBudget() {
+
+function DepartmentBudget() {
   db.query('SELECT department_id AS ID, department.name AS Department,SUM(salary) AS Budget FROM  role INNER JOIN department ON role.department_id = department.id GROUP BY  role.department_id',
     function (err, results) {
       if (err) throw err
       console.table(results)
-      initPrompt()
+      init()
     })
 };
-//function adding department into database
 function addDepartment() {
   inquirer.prompt([{
     name: "name",
     type: "input",
-    message: "Name of new department"
+    message: "Name of department"
   }]).then(function (res) {
     db.query("INSERT INTO department SET ? ", {
         name: res.name
       },
       function (err) {
         if (err) throw err
-        console.log(res.name, "added as a Department");
-        initPrompt();
+        console.log(res.name, "added Department");
+        init();
       }
     )
   })
 };
-//function adding role into database
 function addRole() {
   db.query(`SELECT * FROM department`, async (err, data) => {
     if (err) throw err;
@@ -214,7 +206,6 @@ function addRole() {
       value: id
 
     }));
-    //inquirer prompt that presents a list of departments to choose from after inputting role name and salary
     inquirer.prompt([{
         name: "name",
         type: "input",
@@ -240,16 +231,14 @@ function addRole() {
         function (err) {
           if (err) throw err
           console.log(res.name, "added as a new Role");
-          initPrompt();
+          init();
         }
       )
     })
   })
 };
 
-//function adding employee into database
 function addEmployee() {
-  //async function mapping roles to call as a list in the prompt
   db.query(`SELECT * FROM role`, async (err, data) => {
     if (err) throw err;
     const roles = await data.map(({
@@ -259,7 +248,6 @@ function addEmployee() {
       name: title,
       value: id
     }));
-    //async function mapping managers to call as a list in the prompt
     db.query(`SELECT * FROM employee WHERE manager_id IS NULL`, async (err, data) => {
       if (err) throw err;
       const managers = await data.map(({
@@ -270,7 +258,6 @@ function addEmployee() {
         name: first_name + " " + last_name,
         value: id
       }));
-      //inquirer prompts within the addEmployee selection of the initPrompt
       inquirer.prompt([{
           name: "firstname",
           type: "input",
@@ -302,7 +289,7 @@ function addEmployee() {
         }, function (err) {
           if (err) throw err
           console.table(res.firstname, "added as a new Employee")
-          initPrompt()
+          init()
         })
 
       })
@@ -310,7 +297,6 @@ function addEmployee() {
   })
 };
 
-//function to update employee in the database
 function updateEmployeeRole() {
 
   db.query(`SELECT * FROM employee`, (err, data) => {
@@ -324,7 +310,6 @@ function updateEmployeeRole() {
       name: first_name + " " + last_name,
       value: id
     }));
-    //inquirer prompt that presents a list of employees to choose from
     inquirer.prompt([{
         type: 'list',
         name: 'name',
@@ -333,7 +318,6 @@ function updateEmployeeRole() {
       }])
       .then(event => {
         const employee = event.name;
-        //creating an array to put the results in order to query the updated results
         const updateArray = [];
         updateArray.push(employee);
 
@@ -347,7 +331,6 @@ function updateEmployeeRole() {
             name: title,
             value: id
           }));
-          //inquirer prompt that presents a list of roles to choose from 
           inquirer.prompt([{
               type: 'list',
               name: 'role',
@@ -358,7 +341,6 @@ function updateEmployeeRole() {
               const role = event.role;
               updateArray.push(role);
 
-              //need to swap array to get role_id value first
               let employee = updateArray[0]
               updateArray[0] = role
               updateArray[1] = employee
@@ -375,7 +357,6 @@ function updateEmployeeRole() {
       });
   });
 };
-//function to change the employee manager. if they select themselves they no longer have a manager(self)
 function updateEmployeeManager(){
   db.query(`SELECT * FROM employee`, (err, data) => {
     if (err) throw err;
@@ -388,7 +369,6 @@ function updateEmployeeManager(){
       name: first_name + " " + last_name,
       value: id
     }));
-    //inquirer prompt that presents a list of employees to choose from
     inquirer.prompt([
       {
         type: 'list',
@@ -406,17 +386,16 @@ function updateEmployeeManager(){
         db.query(`UPDATE employee SET manager_id = NULL WHERE id = ${event.employee}`, (err, result) => {
           if (err) throw err;
           console.log("New Manager Updated");
-          initPrompt();
+          init();
         })} else {
           db.query(`UPDATE employee SET manager_id = ${event.manager} WHERE id = ${event.employee}`, (err, result) => {
             if (err) throw err;
             console.log("New Manager Updated");
-            initPrompt();
+            init();
         })};
       })
 })};
 
-//function giving prompts that calls desired delete function
 function deleteFunction() {
   inquirer.prompt([{
     type: "list",
@@ -444,7 +423,6 @@ function deleteFunction() {
 };
 
 
-//function to delete an employee
 function deleteEmployee() {
   db.query(`SELECT * FROM employee`, (err, data) => {
     if (err) throw err;
@@ -457,7 +435,6 @@ function deleteEmployee() {
       name: first_name + " " + last_name,
       value: id
     }));
-    //inquirer prompt that presents a list of employees to choose from
     inquirer.prompt([{
         type: 'list',
         name: 'name',
@@ -469,13 +446,12 @@ function deleteEmployee() {
           if (err) throw err;
           console.log("Employee has been removed from the database.");
 
-          initPrompt();
+          init();
         });
       });
   });
 };
 
-//function to delete a role
 function deleteRole() {
   db.query(`SELECT * FROM role`, (err, data) => {
     if (err) throw err;
@@ -487,7 +463,6 @@ function deleteRole() {
       name: title,
       value: id
     }));
-    //inquirer prompt that presents a list of roles to choose from
     inquirer.prompt([{
         type: 'list',
         name: 'name',
@@ -499,13 +474,12 @@ function deleteRole() {
           if (err) throw err;
           console.log("Role has been removed from the database.");
 
-          initPrompt();
+          init();
         });
       });
   });
 };
 
-//function to delete a department
 function deleteDepartment() {
   db.query(`SELECT * FROM department`, (err, data) => {
     if (err) throw err;
@@ -517,7 +491,6 @@ function deleteDepartment() {
       name: name,
       value: id
     }));
-    //inquirer prompt that presents a list of department to choose from
     inquirer.prompt([{
         type: 'list',
         name: 'name',
@@ -529,10 +502,10 @@ function deleteDepartment() {
           if (err) throw err;
           console.log("Department has been removed from the database.");
 
-          initPrompt();
+          init();
         });
       });
   });
 };
 
-initPrompt();
+init();
