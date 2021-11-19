@@ -31,23 +31,23 @@ function init() {
         break;
 
       case "View Roles?":
-        viewAllRoles();
+        viewRoles();
         break;
 
       case "View Employees":
-        viewAllEmployees();
+        viewEmployees();
         break;
 
       case "View Department Budget":
-        viewDepartmentBudget();
+        DepartmentBudget();
         break;
 
       case "View Employees by Manager":
-        viewEmployeesByManager();
+        EmployeesByManager();
         break;
 
       case "View Employees by Department":
-        viewEmployeesByDepartment();
+        EmployeesByDepartment();
         break;
 
       case "Add Department?":
